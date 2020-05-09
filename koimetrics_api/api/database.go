@@ -54,6 +54,10 @@ type AnalyticResult struct {
 	Country      	string
 	City         	string
 	Region       	string
+	CountryCode		string
+	Ip 				string
+	Browser 		string
+	OS 				string
 }
 
 type ApiKey struct {

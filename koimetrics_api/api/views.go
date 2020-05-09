@@ -91,6 +91,10 @@ func Statistics(c *gin.Context) {
 	analytic.Country 		= c.PostForm("Country")
 	analytic.City 			= c.PostForm("City")
 	analytic.Region 		= c.PostForm("Region")
+	analytic.CountryCode	= c.PostForm("CountryCode")
+	analytic.Ip				= c.PostForm("Ip")
+	analytic.Browser 		= c.PostForm("Browser")
+	analytic.OS 			= c.PostForm("OS")
 	analytic.Session_id		= c.PostForm("session_id")
 	analytic.Session_start 	= time.Now().Format("2006-01-02 15:04:05")
 	

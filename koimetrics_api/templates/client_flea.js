@@ -14,6 +14,58 @@ function koimetricsIsPhoneDevice() {
     }
 }
 
+function koimetricsBrowser(){
+    var browser = "unknown";
+    // Opera 8.0+
+    var isOpera = (!!window.opr && !!opr.addons) || !!window.opera || navigator.userAgent.indexOf(' OPR/') >= 0;
+    browser = isOpera? "Opera 8.0+" : browser;
+    // Firefox 1.0+
+    var isFirefox = typeof InstallTrigger !== 'undefined';
+    browser = isFirefox? "Firefox" : browser;
+    // Safari 3.0+ "[object HTMLElementConstructor]" 
+    var isSafari = /constructor/i.test(window.HTMLElement) || (function (p) { return p.toString() === "[object SafariRemoteNotification]"; })(!window['safari'] || (typeof safari !== 'undefined' && safari.pushNotification));
+    browser = isSafari? "Safari 3.0+" : browser;
+    // Internet Explorer 6-11
+    var isIE = /*@cc_on!@*/false || !!document.documentMode;
+    browser = isIE? "Internet Explorer" : browser;
+    // Edge 20+
+    var isEdge = !isIE && !!window.StyleMedia;
+    browser = isEdge? "Edge" : browser;
+    // Chrome 1 - 79
+    var isChrome = !!window.chrome && (!!window.chrome.webstore || !!window.chrome.runtime);
+    browser = isChrome? "Chrome" : browser;
+    // Edge (based on chromium) detection
+    var isEdgeChromium = isChrome && (navigator.userAgent.indexOf("Edg") != -1);
+    browser = isEdgeChromium? "Edge (Chromium based)" : browser;
+    // Blink engine detection
+    var isBlink = (isChrome || isOpera) && !!window.CSS;
+    browser = isBlink? "Blink engine" : browser;
+    
+    return browser;
+}
+
+function koimetricsGetOS() {
+    var userAgent = window.navigator.userAgent,
+        platform = window.navigator.platform,
+        macosPlatforms = ['Macintosh', 'MacIntel', 'MacPPC', 'Mac68K'],
+        windowsPlatforms = ['Win32', 'Win64', 'Windows', 'WinCE'],
+        iosPlatforms = ['iPhone', 'iPad', 'iPod'],
+        os = null;
+  
+    if (macosPlatforms.indexOf(platform) !== -1) {
+      os = 'Mac OS';
+    } else if (iosPlatforms.indexOf(platform) !== -1) {
+      os = 'iOS';
+    } else if (windowsPlatforms.indexOf(platform) !== -1) {
+      os = 'Windows';
+    } else if (/Android/.test(userAgent)) {
+      os = 'Android';
+    } else if (!os && /Linux/.test(platform)) {
+      os = 'Linux';
+    }
+    return os;
+  }
+
 function koimetricsFormatDate(date) {
     var d = new Date(date),
     month = '' + (d.getMonth() + 1);
@@ -60,7 +112,7 @@ function koimetricsSendData(koimetricsData) {
         console.log(res.json);
     });
     console.log("Data sent");
-    window.setInterval(heart_beat, 10000);
+    window.setInterval(heart_beat, 5000);
 }
 
 function captureUserStatus() {
@@ -73,6 +125,8 @@ function captureUserStatus() {
     data["Referrer"] = (document.referrer.length > 0 ? document.referrer.split("/")[2].replace("www.", "") : ""),
     data["ReferrerPath"] = (data["Referrer"].length > 0 ? "/"+document.referrer.split("/").slice(3).join("/") : ""),
     data["Time"] = koimetricsFormatHHMM(date)
+    data["Browser"] = koimetricsBrowser();
+    data["OS"] = koimetricsGetOS();
     data["Performance"] = performance.now();
     data["Latitude"] = "";
     data["Longitude"] = "";
@@ -88,11 +142,15 @@ function captureUserStatus() {
             var regionName = jresponse.region;
             var latitude = jresponse.latitude;
             var longitude = jresponse.longitude;
+            var countryCode = jresponse.country_code;
+            var ip = jresponse.ip;
             data["Country"] = country;
             data["City"] = city;
             data["Region"] = regionName;
             data["Latitude"] = latitude;
             data["Longitude"] = longitude;
+            data["CountryCode"] = countryCode;
+            data["Ip"] = ip;
             
             var askLocationTo = "{{.ask_location_to}}";
             if (askLocationTo.includes(window.location.host)) {
