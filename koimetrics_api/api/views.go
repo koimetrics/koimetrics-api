@@ -74,6 +74,12 @@ func Stats_script(c *gin.Context) {
 	}
 }
 
+func insertAnalytic(analytic AnalyticResult){
+	insertResult, _ := analytics.InsertOne(context.TODO(), analytic)
+	fmt.Println("New session started with session_id: ", analytic.Session_id)
+	fmt.Println("New document inserted with ID: ", insertResult.InsertedID)
+}
+
 func Statistics(c *gin.Context) {
 	analytic := AnalyticResult{}
 	analytic.Key  			= c.PostForm("Key")
@@ -98,21 +104,22 @@ func Statistics(c *gin.Context) {
 	analytic.Session_id		= c.PostForm("session_id")
 	analytic.Session_start 	= time.Now().Format("2006-01-02 15:04:05")
 	
-	insertResult, _ := analytics.InsertOne(context.TODO(), analytic)
-	fmt.Println("New session started with session_id: ", analytic.Session_id)
-	fmt.Println("New document inserted with ID: ", insertResult.InsertedID)
-	
+	go insertAnalytic(analytic)
 	c.JSON(200, gin.H{
 		"status": "SUCCESS",
 	})
 }
 
-func Heart_beats(c *gin.Context){
-	session_id := c.PostForm("session_id")
+func updateAnalytic(session_id string){
 	filter := bson.D{{"session_id", session_id}}
 	session_end := time.Now().Format("2006-01-02 15:04:05")
 	analytics.UpdateOne(context.TODO(), filter, bson.M{"$set": bson.M{"session_end": session_end}})
 	fmt.Println(" Updated session end for session_id: ", session_id)
+}
+
+func Heart_beats(c *gin.Context){
+	session_id := c.PostForm("session_id")
+	go updateAnalytic(session_id)
 	c.JSON(200, gin.H{
 		"status": "SUCCESS",
 		"session_id": session_id,

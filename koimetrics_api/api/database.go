@@ -6,6 +6,7 @@ import (
 	"log"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+
 )
 
 var client mongo.Client
@@ -14,7 +15,11 @@ var apikeys *mongo.Collection
 var domains *mongo.Collection
 
 func DBConnection() {
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	//clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	
+	DB_URL := goDotEnvVariable("DB_URL")
+
+	clientOptions := options.Client().ApplyURI(DB_URL)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
 		log.Fatal(err)
