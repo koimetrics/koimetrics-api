@@ -14,11 +14,8 @@ var analytics *mongo.Collection
 var apikeys *mongo.Collection
 var domains *mongo.Collection
 
-func DBConnection() {
-	//clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
-	
-	DB_URL := goDotEnvVariable("DB_URL")
-
+func DBConnection() {	
+	DB_URL := GoDotEnvVariable("ATLASDB_URL")
 	clientOptions := options.Client().ApplyURI(DB_URL)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {

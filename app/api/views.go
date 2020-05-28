@@ -12,13 +12,14 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"time"
+	"github.com/lithammer/shortuuid"
 	"github.com/twinj/uuid"
+	"time"
 )
 
 // use godot package to load/read the .env file and
 // return the value of the key
-func goDotEnvVariable(key string) string {
+func GoDotEnvVariable(key string) string {
 	// load .env file
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -26,10 +27,11 @@ func goDotEnvVariable(key string) string {
 	}
 	return os.Getenv(key)
 }
-  
+
+var SECRET_KEY string = GoDotEnvVariable("SECRET_KEY")
 
 // CLIENT BROWSER ENDPOINTS
-func js_parser(template_name string, context map[string]string) string {
+func TemplateParser(template_name string, context map[string]string) string {
 	client_flea, err := ioutil.ReadFile(template_name)
 	if err == nil {
 		parsed_js := string(client_flea)
@@ -42,7 +44,7 @@ func js_parser(template_name string, context map[string]string) string {
 	}
 }
 
-func Stats_script(c *gin.Context) {
+func VisitorScript(c *gin.Context) {
 	key := c.Param("key")
 	var apikey ApiKey
 	filter := bson.D{{
@@ -53,7 +55,7 @@ func Stats_script(c *gin.Context) {
 	}}
 	err := apikeys.FindOne(context.TODO(), filter).Decode(&apikey)
 	if err == nil {
-		goapi_host := goDotEnvVariable("GOAPI_HOST")
+		goapi_host := GoDotEnvVariable("GOAPI_HOST")
 		session_id := uuid.NewV4()
 		fmt.Println(session_id.String())
 		c.Header("Content-Type", "application/javascript; charset=utf-8")
@@ -64,7 +66,7 @@ func Stats_script(c *gin.Context) {
 			"{{.goapi_host}}": goapi_host,
 			"{{.ask_location_to}}" : strings.Join(apikey.AskLocationTo, ","),
 		}
-		client_flea_str := js_parser("templates/client_flea.js", context)
+		client_flea_str := TemplateParser("templates/client_flea.js", context)
 		c.String(http.StatusOK, client_flea_str)
 	} else {
 		c.JSON(200, gin.H{
@@ -80,7 +82,7 @@ func insertAnalytic(analytic AnalyticResult){
 	fmt.Println("New document inserted with ID: ", insertResult.InsertedID)
 }
 
-func Statistics(c *gin.Context) {
+func VisitorResults(c *gin.Context) {
 	analytic := AnalyticResult{}
 	analytic.Key  			= c.PostForm("Key")
 	analytic.Host 			= c.PostForm("Host")
@@ -117,7 +119,7 @@ func updateAnalytic(session_id string){
 	fmt.Println(" Updated session end for session_id: ", session_id)
 }
 
-func Heart_beats(c *gin.Context){
+func HeartBeats(c *gin.Context){
 	session_id := c.PostForm("session_id")
 	go updateAnalytic(session_id)
 	c.JSON(200, gin.H{
@@ -126,15 +128,29 @@ func Heart_beats(c *gin.Context){
 	})
 }
 
+///////////////////////////////////////////////////////////////
+//		KOIMETRICS CLIENT ACCESS
+///////////////////////////////////////////////////////////////
 
-// WEB APP ENDPOINTS
-//register_apikey: 
-//  Receives a keyCode and an endDate in format "YYYY-mm-dd".
-//   If keycode doesnt exist, creates a new apikey record in database with end date.
-//   If keyCode does exist, send an error message telling the key code isnt available.
-
-func Register_apikey(c *gin.Context) {
-	newKeyCode := c.PostForm("keyCode")
+/* 
+NewApiKey
+	Description: Generate a new and unique apikey in database
+	Endpoint:
+	Input:
+		endDate: "YYYY-mm-dd"
+	Output:
+		JSON with results
+*/
+func RegisterApikey(c *gin.Context) {
+	secretKey := c.PostForm("secretKey")
+	if secretKey != SECRET_KEY {
+		c.JSON(200, gin.H{
+			"status":     "AUTHENTICATION ERROR",
+			"statusCode": 0,
+		})
+		return
+	}
+	newKeyCode := shortuuid.New()
 	newEndDate := c.PostForm("endDate")
 	var apikey ApiKey
 	// Check if key exists
@@ -167,7 +183,7 @@ func Register_apikey(c *gin.Context) {
 }
 
 
-
+// Deprecated
 func Update_asked_location_websites(c *gin.Context) {
 	akey := c.PostForm("ApiKey")
 	askLocationToData := c.PostForm("AskLocationTo")
@@ -187,7 +203,8 @@ func Update_asked_location_websites(c *gin.Context) {
 	}
 }
 
-func Analytics_between_dates(c *gin.Context) {
+// Deprecated
+func AnalyticsBetweenDates(c *gin.Context) {
 	start_date := c.Query("start_date")
 	end_date := c.Query("end_date")
 	host := c.Query("host")
@@ -223,11 +240,33 @@ func Analytics_between_dates(c *gin.Context) {
 	})
 }
 
-func Current_sessions(c *gin.Context){
+/* 
+	CurrentSessions:
+	Description: Return a list of the live sessions of a website
+	Endpoint: /DJANGO/get_sessions/
+	Input: 
+		host= website host
+		apikey= owner apikey
+		seconds= seconds behind to consider a visitor as a live session
+	Output:
+		results= Sessions filtered
+	
+*/
+func CurrentSessions(c *gin.Context){
+	// Set parameters
+	secretKey := c.PostForm("secretKey")
+	if secretKey != SECRET_KEY {
+		c.JSON(200, gin.H{
+			"status":     "AUTHENTICATION ERROR",
+			"statusCode": 0,
+		})
+	}
 	host := c.Query("host")
 	apikey := c.Query("apikey")
 	seconds_ago, err := strconv.Atoi( c.Query("seconds") )
 	min_session_end := time.Now().Add(time.Duration(-seconds_ago) * time.Second).Format("2006-01-02 15:04:05")
+	
+	// Query pipeline
 	pipeline := bson.M{
 		"$and": []interface{}{
 			bson.M{
@@ -242,16 +281,17 @@ func Current_sessions(c *gin.Context){
 		},
 	}
 	
+	// Filter and send query results
 	filterCursor, err := analytics.Find(context.TODO(), pipeline)
 	if err != nil {
 		fmt.Println(err)
 	}
-	var analyticsFiltered []bson.M
-	if err = filterCursor.All(context.TODO(), &analyticsFiltered); err != nil {
+	var sessionsFiltered []bson.M
+	if err = filterCursor.All(context.TODO(), &sessionsFiltered); err != nil {
 		log.Fatal(err)
 	}
 	c.JSON(200, gin.H{
 		"status":  "SUCCESS",
-		"results": analyticsFiltered,
+		"results": sessionsFiltered,
 	})
 }
