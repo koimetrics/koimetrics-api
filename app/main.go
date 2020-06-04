@@ -22,7 +22,7 @@ func main() {
 	})
 	
 	// Send koimetrics script
-	r.GET( "/API/v1/:key/script.js", 			api.VisitorScript) 
+	r.GET( "/API/v1/:key/koimetrics.js", 			api.VisitorScript) 
 	
 	// Receive client statistics
 	r.POST("/API/v1/statistics/", 			 	api.VisitorResults )  
@@ -31,7 +31,7 @@ func main() {
 	r.POST("/API/v1/heartbeats/", 			 	api.HeartBeats)  
 	
 	// Register users api key
-	r.POST("/DJANGO/new_apikey", 			api.RegisterApikey)
+	r.GET("/DJANGO/new_apikey", 			api.RegisterApikey)
 	
 	// Deprecated
 	//r.POST("/DJANGO/asked_location_websites/",  api.Update_asked_location_websites)

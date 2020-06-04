@@ -92,7 +92,7 @@ function heart_beat( ){
     var f_data = new FormData();
     f_data.append("Key", "{{.key}}");
     f_data.append("session_id", "{{.session_id}}");
-    fetch("{{.goapi_host}}/API/v1/heartbeats/", {
+    fetch("{{.goapi_host}}API/v1/heartbeats/", {
         method: "POST",
         body: f_data,
     }).then(function (res) {
@@ -105,7 +105,7 @@ function koimetricsSendData(koimetricsData) {
     for (var key in koimetricsData) {
         f_data.append(key, koimetricsData[key]);
     }
-    fetch("{{.goapi_host}}/API/v1/statistics/", {
+    fetch("{{.goapi_host}}API/v1/statistics/", {
         method: "POST",
         body: f_data,
     }).then(function (res) {

@@ -137,12 +137,13 @@ NewApiKey
 	Description: Generate a new and unique apikey in database
 	Endpoint:
 	Input:
-		endDate: "YYYY-mm-dd"
+		secret_key: Authentication secret key
+		end_date: End date of website track style "YYYY-mm-dd"
 	Output:
 		JSON with results
 */
 func RegisterApikey(c *gin.Context) {
-	secretKey := c.PostForm("secretKey")
+	secretKey := c.Query("secret_key")
 	if secretKey != SECRET_KEY {
 		c.JSON(200, gin.H{
 			"status":     "AUTHENTICATION ERROR",
@@ -151,7 +152,7 @@ func RegisterApikey(c *gin.Context) {
 		return
 	}
 	newKeyCode := shortuuid.New()
-	newEndDate := c.PostForm("endDate")
+	newEndDate := c.Query("end_date")
 	var apikey ApiKey
 	// Check if key exists
 	filter := bson.D{{"key", newKeyCode}}
@@ -254,7 +255,7 @@ func AnalyticsBetweenDates(c *gin.Context) {
 */
 func CurrentSessions(c *gin.Context){
 	// Set parameters
-	secretKey := c.PostForm("secretKey")
+	secretKey := c.Query("secret_key")
 	if secretKey != SECRET_KEY {
 		c.JSON(200, gin.H{
 			"status":     "AUTHENTICATION ERROR",
