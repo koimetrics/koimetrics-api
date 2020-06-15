@@ -1,5 +1,3 @@
-console.log("Script received");
-
 function koimetricsIsPhoneDevice() {
     if (navigator.userAgent.match(/Android/i)
         || navigator.userAgent.match(/webOS/i)
@@ -96,7 +94,6 @@ function heart_beat( ){
         method: "POST",
         body: f_data,
     }).then(function (res) {
-        console.log(res.json);
     });
 }
 
@@ -109,9 +106,8 @@ function koimetricsSendData(koimetricsData) {
         method: "POST",
         body: f_data,
     }).then(function (res) {
-        console.log(res.json);
+        console.log("this site uses https://www.koimetrics.com");
     });
-    console.log("Data sent");
     window.setInterval(heart_beat, 5000);
 }
 
